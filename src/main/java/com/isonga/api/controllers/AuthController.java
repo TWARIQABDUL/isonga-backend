@@ -1,5 +1,6 @@
 package com.isonga.api.controllers;
 
+import com.isonga.api.dto.ApiResponse;
 import com.isonga.api.dto.LoginRequest;
 import com.isonga.api.dto.LoginResponse;
 import com.isonga.api.dto.RegisterRequest;
@@ -7,10 +8,16 @@ import com.isonga.api.models.User;
 import com.isonga.api.services.UserService;
 import com.isonga.api.utils.JwtUtil;
 
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 // import com.isonga.api.models.Role;
@@ -30,30 +37,44 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
-        try {
-            if (userService.existsByIdNumber(request.getIdNumber())) {
-                return ResponseEntity.badRequest().body("User with this ID already exists.");
-            }
-
-            User user = new User();
-            user.setIdNumber(request.getIdNumber());
-            user.setFullName(request.getFullName());
-            user.setEmail(request.getEmail());
-            user.setCell(request.getCell());
-            user.setPhoneNumber(request.getPhoneNumber());
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
-            user.setRole(User.Role.valueOf(request.getRole().toUpperCase()));
-
-            // user.setRole(request.getRole().toUpperCase()); // "USER" or "ADMIN"
-
-            User savedUser = userService.createUser(user);
-
-            return ResponseEntity.ok(savedUser);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Registration failed: " + e.getMessage());
+    
+public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+    try {
+        if (userService.existsByIdNumber(request.getIdNumber())) {
+            return ResponseEntity.badRequest().body(
+                new ApiResponse<>(false, "User with this ID already exists.", null)
+            );
         }
+
+        User user = new User();
+        user.setIdNumber(request.getIdNumber());
+        user.setFullName(request.getFullName());
+        user.setEmail(request.getEmail());
+        user.setCell(request.getCell());
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(User.Role.valueOf(request.getRole().toUpperCase()));
+
+        User savedUser = userService.createUser(user);
+
+        // Return only essential fields (never password)
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", savedUser.getId());
+        data.put("idNumber", savedUser.getIdNumber());
+        data.put("fullName", savedUser.getFullName());
+        data.put("email", savedUser.getEmail());
+        data.put("role", savedUser.getRole());
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(new ApiResponse<>(true, "User registered successfully", data));
+
+    } catch (Exception e) {
+        return ResponseEntity.internalServerError().body(
+            new ApiResponse<>(false, "Registration failed: " + e.getMessage(), null)
+        );
     }
+}
+
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
