@@ -3,7 +3,6 @@ package com.isonga.api.controllers;
 import com.isonga.api.dto.SavingsRequest;
 import com.isonga.api.models.Savings;
 import com.isonga.api.models.User;
-// import com.isonga.api.repositories.UserRepository;
 import com.isonga.api.services.SavingsService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+// import java.util.List;
 import java.util.Map;
 
 @Validated
@@ -20,20 +19,20 @@ import java.util.Map;
 @RequestMapping("/api/savings")
 public class SavingsController {
 
-    // @Autowired
-    // private UserRepository userRepository;
-
     @Autowired
     private SavingsService savingsService;
 
     @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody SavingsRequest request, Authentication authentication) {
-        // Extract authenticated user from JWT
-        User authenticatedUser = (User) authentication.getPrincipal();
+        // ✅ Safely cast principal and validate
+        if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+        }
+
         String tokenId = authenticatedUser.getIdNumber();
         String requestId = request.getUserIdNumber();
 
-        // ✅ Reject if the client tries to send a mismatching ID
+        // ✅ Reject spoofing if user tries to manually inject another ID number
         if (requestId != null && !requestId.equals(tokenId)) {
             return ResponseEntity.status(403).body(Map.of(
                     "success", false,
@@ -41,10 +40,10 @@ public class SavingsController {
             ));
         }
 
-        // ✅ Forcefully set the correct ID number
+        // ✅ Enforce that only the authenticated user's ID is used
         request.setUserIdNumber(tokenId);
 
-        // Proceed to save
+        // Save savings for the current authenticated user
         Savings saved = savingsService.save(request);
 
         return ResponseEntity.ok(Map.of(
@@ -55,12 +54,30 @@ public class SavingsController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Savings>> getAll() {
+    public ResponseEntity<?> getAll(Authentication authentication) {
+        // ✅ Restrict GET /api/savings to ADMIN only
+        if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+        }
+
+        if (authenticatedUser.getRole() != User.Role.ADMIN) {
+            return ResponseEntity.status(403).body(Map.of("success", false, "message", "Access denied: Admins only."));
+        }
+
         return ResponseEntity.ok(savingsService.findAll());
     }
 
     @GetMapping("/{idNumber}")
-    public ResponseEntity<List<Savings>> getByUserId(@PathVariable String idNumber) {
+    public ResponseEntity<?> getByUserId(@PathVariable String idNumber, Authentication authentication) {
+        // ✅ Restrict users to view only their own savings
+        if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+        }
+
+        if (!authenticatedUser.getIdNumber().equals(idNumber)) {
+            return ResponseEntity.status(403).body(Map.of("success", false, "message", "Access denied: Cannot view savings of another user."));
+        }
+
         return ResponseEntity.ok(savingsService.findByUserIdNumber(idNumber));
     }
 }
