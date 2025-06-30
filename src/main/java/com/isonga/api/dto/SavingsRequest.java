@@ -7,13 +7,12 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+// import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Data
 public class SavingsRequest {
 
-    // @NotBlank(message = "User ID number is required") // Use this instead of @NotNull
-    @JsonIgnore
+    @NotBlank(message = "User ID number is required") // Use this instead of @NotNull
     private String userIdNumber;
 
     @NotNull(message = "Amount is required")
