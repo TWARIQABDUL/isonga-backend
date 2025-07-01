@@ -11,7 +11,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-// import java.util.List;
 import java.util.Map;
 
 @Validated
@@ -32,18 +31,20 @@ public class SavingsController {
         String tokenId = authenticatedUser.getIdNumber();
         String requestId = request.getUserIdNumber();
 
-        // ✅ Reject spoofing if user tries to manually inject another ID number
-        if (requestId != null && !requestId.equals(tokenId)) {
+        // ✅ Reject spoofing if user is not admin and tries to use another user's ID
+        if ((requestId != null && !requestId.equals(tokenId)) && authenticatedUser.getRole() != User.Role.ADMIN) {
             return ResponseEntity.status(403).body(Map.of(
                     "success", false,
                     "message", "Access denied: ID in request does not match the authenticated user."
             ));
         }
 
-        // ✅ Enforce that only the authenticated user's ID is used
-        request.setUserIdNumber(tokenId);
+        // ✅ For regular users, enforce ID override to avoid misuse
+        if (authenticatedUser.getRole() != User.Role.ADMIN) {
+            request.setUserIdNumber(tokenId);
+        }
 
-        // Save savings for the current authenticated user
+        // Save savings for the specified user
         Savings saved = savingsService.save(request);
 
         return ResponseEntity.ok(Map.of(
@@ -74,7 +75,7 @@ public class SavingsController {
             return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
         }
 
-        if (!authenticatedUser.getIdNumber().equals(idNumber)) {
+        if (!authenticatedUser.getIdNumber().equals(idNumber) && authenticatedUser.getRole() != User.Role.ADMIN) {
             return ResponseEntity.status(403).body(Map.of("success", false, "message", "Access denied: Cannot view savings of another user."));
         }
 
