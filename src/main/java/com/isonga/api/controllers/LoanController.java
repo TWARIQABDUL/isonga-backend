@@ -1,6 +1,7 @@
 package com.isonga.api.controllers;
 
 import com.isonga.api.dto.LoanRequest;
+import com.isonga.api.dto.LoanStatusUpdateRequest;
 import com.isonga.api.models.Loan;
 import com.isonga.api.models.User;
 import com.isonga.api.services.LoanService;
@@ -62,4 +63,30 @@ public class LoanController {
 
         return ResponseEntity.ok(Map.of("success", true, "loans", loanService.getAllLoans()));
     }
+    @PatchMapping("/{loanId}/status")
+public ResponseEntity<?> updateLoanStatus(
+        @PathVariable String loanId,
+        @Valid @RequestBody LoanStatusUpdateRequest request,
+        Authentication authentication) {
+
+    if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
+        return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+    }
+
+    if (authenticatedUser.getRole() != User.Role.ADMIN) {
+        return ResponseEntity.status(403).body(Map.of("success", false, "message", "Access denied: Admins only"));
+    }
+
+    try {
+        Loan updatedLoan = loanService.updateLoanStatus(loanId, request.getStatus());
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Loan status updated successfully",
+                "loan", updatedLoan
+        ));
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+    }
+}
+
 }

@@ -81,4 +81,36 @@ public class LoanService {
         return loanRepository.findAll();
     }
 
+    @Transactional
+    public Loan updateLoanStatus(String loanId, Loan.Status newStatus) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
+
+        // Validate status transitions:
+        switch (loan.getStatus()) {
+            case pending -> {
+                if (newStatus != Loan.Status.approved && newStatus != Loan.Status.rejected) {
+                    throw new IllegalArgumentException("Can only approve or reject a pending loan");
+                }
+            }
+            case approved -> {
+                if (newStatus != Loan.Status.active) {
+                    throw new IllegalArgumentException("Can only activate an approved loan");
+                }
+            }
+            case active -> {
+                if (newStatus != Loan.Status.completed) {
+                    throw new IllegalArgumentException("Can only complete an active loan");
+                }
+            }
+            default -> throw new IllegalArgumentException("Cannot update loan with status " + loan.getStatus());
+        }
+
+        loan.setStatus(newStatus);
+        if (newStatus == Loan.Status.approved) {
+            loan.setApprovalDate(LocalDate.now());
+        }
+        return loanRepository.save(loan);
+    }
+
 }
