@@ -7,13 +7,13 @@ import com.isonga.api.repositories.LoanRepository;
 import com.isonga.api.repositories.SavingsRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
-// import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -28,10 +28,12 @@ public class LoanService {
 
     @Transactional
     public Loan requestLoan(String userIdNumber, LoanRequest request) {
-        // 🚫 Check if user already has a non-completed loan
         List<Loan> existingLoans = loanRepository.findByUserIdNumber(userIdNumber);
         boolean hasUnpaidLoan = existingLoans.stream().anyMatch(
-                loan -> loan.getStatus() != Loan.Status.completed);
+                loan -> loan.getStatus() == Loan.Status.pending
+                        || loan.getStatus() == Loan.Status.approved
+                        || loan.getStatus() == Loan.Status.active
+        );
         if (hasUnpaidLoan) {
             throw new IllegalArgumentException(
                     "You already have a pending, approved, or active loan. Complete it before requesting a new one.");
@@ -44,10 +46,8 @@ public class LoanService {
             throw new IllegalArgumentException("Loan amount exceeds 80% of your total savings.");
         }
 
-        // ✅ Use fixed interest rate
         BigDecimal interestRate = FIXED_INTEREST;
 
-        // ✅ Calculate monthly payment
         BigDecimal totalWithInterest = request.getAmount().multiply(BigDecimal.ONE.add(interestRate));
         BigDecimal monthlyPayment = totalWithInterest.divide(
                 BigDecimal.valueOf(request.getDuration()), 2, RoundingMode.HALF_UP);
@@ -58,7 +58,7 @@ public class LoanService {
         loan.setAmount(request.getAmount());
         loan.setPurpose(request.getPurpose());
         loan.setDuration(request.getDuration());
-        loan.setInterestRate(interestRate.multiply(BigDecimal.valueOf(100))); // 5.00%
+        loan.setInterestRate(interestRate.multiply(BigDecimal.valueOf(100)));
         loan.setMonthlyPayment(monthlyPayment);
         loan.setRequestDate(LocalDate.now());
         loan.setStatus(Loan.Status.pending);
@@ -70,6 +70,10 @@ public class LoanService {
         return loanRepository.findByUserIdNumber(userIdNumber);
     }
 
+    public List<Loan> getAllLoans() {
+        return loanRepository.findAll();
+    }
+
     private BigDecimal getTotalSavings(String userIdNumber) {
         List<Savings> savings = savingsRepository.findByUserIdNumber(userIdNumber);
         return savings.stream()
@@ -77,40 +81,53 @@ public class LoanService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public List<Loan> getAllLoans() {
-        return loanRepository.findAll();
-    }
-
     @Transactional
-    public Loan updateLoanStatus(String loanId, Loan.Status newStatus) {
+    public Loan updateLoanStatus(String loanId, Loan.Status status) {
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
 
-        // Validate status transitions:
-        switch (loan.getStatus()) {
-            case pending -> {
-                if (newStatus != Loan.Status.approved && newStatus != Loan.Status.rejected) {
-                    throw new IllegalArgumentException("Can only approve or reject a pending loan");
-                }
-            }
-            case approved -> {
-                if (newStatus != Loan.Status.active) {
-                    throw new IllegalArgumentException("Can only activate an approved loan");
-                }
-            }
-            case active -> {
-                if (newStatus != Loan.Status.completed) {
-                    throw new IllegalArgumentException("Can only complete an active loan");
-                }
-            }
-            default -> throw new IllegalArgumentException("Cannot update loan with status " + loan.getStatus());
-        }
-
-        loan.setStatus(newStatus);
-        if (newStatus == Loan.Status.approved) {
+        loan.setStatus(status);
+        if (status == Loan.Status.approved) {
             loan.setApprovalDate(LocalDate.now());
         }
         return loanRepository.save(loan);
     }
+
+    /**
+     * ✅ Auto Reject Loans Not Collected within 1 day after approval
+     */
+    @Scheduled(cron = "0 0 0 * * *")  // Every midnight
+    @Transactional
+    public void autoRejectUncollectedLoans() {
+        List<Loan> approvedLoans = loanRepository.findAll().stream()
+                .filter(loan -> loan.getStatus() == Loan.Status.approved)
+                .toList();
+
+        LocalDate today = LocalDate.now();
+
+        for (Loan loan : approvedLoans) {
+            if (loan.getApprovalDate() != null && loan.getApprovalDate().plusDays(1).isBefore(today)) {
+                loan.setStatus(Loan.Status.rejected);
+                loanRepository.save(loan);
+                System.out.println("Loan auto-rejected: " + loan.getId());
+            }
+        }
+    }
+    public Loan collectLoan(String loanId, String userIdNumber) {
+    Loan loan = loanRepository.findById(loanId)
+            .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
+    //this will be enforced by the admins in peron for now
+    // if (!loan.getUserIdNumber().equals(userIdNumber)) {
+    //     throw new IllegalArgumentException("You can only collect your own loan.");
+    // }
+
+    if (loan.getStatus() != Loan.Status.approved) {
+        throw new IllegalArgumentException("Only approved loans can be collected.");
+    }
+
+    loan.setStatus(Loan.Status.active);
+    loan.setApprovalDate(LocalDate.now());
+    return loanRepository.save(loan);
+}
 
 }

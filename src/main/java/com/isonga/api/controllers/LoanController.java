@@ -38,8 +38,7 @@ public class LoanController {
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Loan request submitted successfully",
-                "data", loan
-        ));
+                "data", loan));
     }
 
     @GetMapping("/me")
@@ -63,30 +62,53 @@ public class LoanController {
 
         return ResponseEntity.ok(Map.of("success", true, "loans", loanService.getAllLoans()));
     }
+
     @PatchMapping("/{loanId}/status")
-public ResponseEntity<?> updateLoanStatus(
-        @PathVariable String loanId,
-        @Valid @RequestBody LoanStatusUpdateRequest request,
-        Authentication authentication) {
+    public ResponseEntity<?> updateLoanStatus(
+            @PathVariable String loanId,
+            @Valid @RequestBody LoanStatusUpdateRequest request,
+            Authentication authentication) {
 
-    if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
-        return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+        if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+        }
+
+        if (authenticatedUser.getRole() != User.Role.ADMIN) {
+            return ResponseEntity.status(403).body(Map.of("success", false, "message", "Access denied: Admins only"));
+        }
+
+        try {
+            Loan updatedLoan = loanService.updateLoanStatus(loanId, request.getStatus());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Loan status updated successfully",
+                    "loan", updatedLoan));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
     }
 
-    if (authenticatedUser.getRole() != User.Role.ADMIN) {
-        return ResponseEntity.status(403).body(Map.of("success", false, "message", "Access denied: Admins only"));
-    }
+    // ✅ NEW: Mark loan as collected (USER)
+    @PatchMapping("/{loanId}/collect")
+    public ResponseEntity<?> collectLoan(
+            @PathVariable String loanId,
+            Authentication authentication) {
 
-    try {
-        Loan updatedLoan = loanService.updateLoanStatus(loanId, request.getStatus());
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Loan status updated successfully",
-                "loan", updatedLoan
-        ));
-    } catch (IllegalArgumentException e) {
-        return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
-    }
-}
+        if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+        }
+        if (authenticatedUser.getRole() != User.Role.ADMIN) {
+            return ResponseEntity.status(403).body(Map.of("success", false, "message", "Access denied: Admins only"));
+        }
 
+        try {
+            Loan updatedLoan = loanService.collectLoan(loanId, authenticatedUser.getIdNumber());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Loan collected successfully",
+                    "loan", updatedLoan));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
 }
