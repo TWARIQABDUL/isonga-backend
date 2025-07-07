@@ -11,9 +11,11 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+
     public Optional<User> findByEmail(String email) {
-    return userRepository.findByEmail(email);
-}
+        return userRepository.findByEmail(email);
+    }
+
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
@@ -35,8 +37,16 @@ public class UserService {
     public Optional<User> getUserByIdNumber(String idNumber) {
         return userRepository.findByIdNumber(idNumber);
     }
+
     public boolean existsByIdNumber(String idNumber) {
-    return userRepository.findByIdNumber(idNumber).isPresent();
-}
+        return userRepository.findByIdNumber(idNumber).isPresent();
+    }
+
+    public List<User> searchUsers(String query) {
+        return userRepository.findByIdNumberContainingIgnoreCaseOrFullNameContainingIgnoreCase(query, query);
+    }
+    public Optional<User> getUserByEmail(String email){
+        return userRepository.getUserByEmail(email);
+    }
 
 }

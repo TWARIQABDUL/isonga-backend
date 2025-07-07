@@ -1,6 +1,7 @@
 package com.isonga.api.services;
 
 import com.isonga.api.dto.LoanRequest;
+import com.isonga.api.models.Activity;
 import com.isonga.api.models.Loan;
 import com.isonga.api.models.Savings;
 import com.isonga.api.repositories.LoanRepository;
@@ -23,6 +24,7 @@ public class LoanService {
     private final LoanRepository loanRepository;
     private final SavingsRepository savingsRepository;
 
+    private final ActivityService activityService;
     private final BigDecimal MAX_LOAN_PERCENT = new BigDecimal("0.80");
     private final BigDecimal FIXED_INTEREST = new BigDecimal("0.05");
 
@@ -32,8 +34,7 @@ public class LoanService {
         boolean hasUnpaidLoan = existingLoans.stream().anyMatch(
                 loan -> loan.getStatus() == Loan.Status.pending
                         || loan.getStatus() == Loan.Status.approved
-                        || loan.getStatus() == Loan.Status.active
-        );
+                        || loan.getStatus() == Loan.Status.active);
         if (hasUnpaidLoan) {
             throw new IllegalArgumentException(
                     "You already have a pending, approved, or active loan. Complete it before requesting a new one.");
@@ -63,6 +64,14 @@ public class LoanService {
         loan.setRequestDate(LocalDate.now());
         loan.setStatus(Loan.Status.pending);
 
+        activityService.saveActivity(Activity.builder()
+                .userIdNumber(userIdNumber)
+                .type(Activity.Type.loan_request)
+                .description("Loan Request Submitted")
+                .amount(request.getAmount().doubleValue())
+                .date(LocalDate.now())
+                .status(Activity.Status.pending)
+                .build());
         return loanRepository.save(loan);
     }
 
@@ -90,13 +99,35 @@ public class LoanService {
         if (status == Loan.Status.approved) {
             loan.setApprovalDate(LocalDate.now());
         }
-        return loanRepository.save(loan);
+
+        Loan updatedLoan = loanRepository.save(loan);
+
+        // ✅ Activity Trigger
+        String desc = switch (status) {
+            case approved -> "Loan Approved";
+            case rejected -> "Loan Rejected";
+            case completed -> "Loan Completed";
+            default -> null;
+        };
+
+        if (desc != null) {
+            activityService.saveActivity(Activity.builder()
+                    .userIdNumber(loan.getUserIdNumber())
+                    .type(Activity.Type.loan_request)
+                    .description(desc)
+                    .amount(loan.getAmount().doubleValue())
+                    .date(LocalDate.now())
+                    .status(Activity.Status.completed)
+                    .build());
+        }
+
+        return updatedLoan;
     }
 
     /**
      * ✅ Auto Reject Loans Not Collected within 1 day after approval
      */
-    @Scheduled(cron = "0 0 0 * * *")  // Every midnight
+    @Scheduled(cron = "0 0 0 * * *") // Every midnight
     @Transactional
     public void autoRejectUncollectedLoans() {
         List<Loan> approvedLoans = loanRepository.findAll().stream()
@@ -109,25 +140,44 @@ public class LoanService {
             if (loan.getApprovalDate() != null && loan.getApprovalDate().plusDays(1).isBefore(today)) {
                 loan.setStatus(Loan.Status.rejected);
                 loanRepository.save(loan);
-                System.out.println("Loan auto-rejected: " + loan.getId());
+
+                activityService.saveActivity(Activity.builder()
+                        .userIdNumber(loan.getUserIdNumber())
+                        .type(Activity.Type.loan_request)
+                        .description("Loan Auto-Rejected")
+                        .amount(loan.getAmount().doubleValue())
+                        .date(LocalDate.now())
+                        .status(Activity.Status.failed)
+                        .build());
+
+                // System.out.println("Loan auto-rejected: " + loan.getId());
             }
         }
     }
+
     public Loan collectLoan(String loanId, String userIdNumber) {
-    Loan loan = loanRepository.findById(loanId)
-            .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
-    //this will be enforced by the admins in peron for now
-    // if (!loan.getUserIdNumber().equals(userIdNumber)) {
-    //     throw new IllegalArgumentException("You can only collect your own loan.");
-    // }
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
 
-    if (loan.getStatus() != Loan.Status.approved) {
-        throw new IllegalArgumentException("Only approved loans can be collected.");
+        if (loan.getStatus() != Loan.Status.approved) {
+            throw new IllegalArgumentException("Only approved loans can be collected.");
+        }
+
+        loan.setStatus(Loan.Status.active);
+        loan.setApprovalDate(LocalDate.now());
+        Loan collectedLoan = loanRepository.save(loan);
+
+        // ✅ Activity Trigger
+        activityService.saveActivity(Activity.builder()
+                .userIdNumber(loan.getUserIdNumber())
+                .type(Activity.Type.loan_request)
+                .description("Loan Collected")
+                .amount(loan.getAmount().doubleValue())
+                .date(LocalDate.now())
+                .status(Activity.Status.completed)
+                .build());
+
+        return collectedLoan;
     }
-
-    loan.setStatus(Loan.Status.active);
-    loan.setApprovalDate(LocalDate.now());
-    return loanRepository.save(loan);
-}
 
 }

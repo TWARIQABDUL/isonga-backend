@@ -2,6 +2,7 @@ package com.isonga.api.services;
 
 import com.isonga.api.dto.MonthlySavingsSummary;
 import com.isonga.api.dto.SavingsRequest;
+import com.isonga.api.models.Activity;
 import com.isonga.api.models.Savings;
 import com.isonga.api.repositories.SavingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,8 @@ public class SavingsService {
     @Autowired
     private SavingsRepository savingsRepository;
 
+    @Autowired
+    private ActivityService activityService; 
     public Savings save(SavingsRequest request) {
         Savings savings = Savings.builder()
                 .userIdNumber(request.getUserIdNumber())
@@ -24,6 +27,15 @@ public class SavingsService {
                 .target(request.getTarget()) // Already BigDecimal
                 .dateReceived(LocalDate.now()) // Optional
                 .build();
+
+        activityService.saveActivity(Activity.builder()
+                .userIdNumber(request.getUserIdNumber())
+                .type(Activity.Type.deposit)
+                .description("Monthly savings contribution")
+                .amount(request.getAmount().doubleValue())
+                .date(LocalDate.now())
+                .status(Activity.Status.completed)
+                .build());
 
         return savingsRepository.save(savings);
     }
