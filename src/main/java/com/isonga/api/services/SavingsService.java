@@ -1,5 +1,6 @@
 package com.isonga.api.services;
 
+import com.isonga.api.dto.MonthlySavingsSummary;
 import com.isonga.api.dto.SavingsRequest;
 import com.isonga.api.models.Savings;
 import com.isonga.api.repositories.SavingsRepository;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class SavingsService {
@@ -32,5 +34,15 @@ public class SavingsService {
 
     public List<Savings> findByUserIdNumber(String idNumber) {
         return savingsRepository.findByUserIdNumber(idNumber);
+    }
+
+    public List<MonthlySavingsSummary> getMonthlySummary(String userIdNumber) {
+        List<Map<String, Object>> results = savingsRepository.findMonthlySavingsSummary(userIdNumber);
+        return results.stream()
+                .map(item -> new MonthlySavingsSummary(
+                        (String) item.get("month"),
+                        ((Number) item.get("amount")).doubleValue(),
+                        ((Number) item.get("target")).doubleValue()))
+                .toList();
     }
 }

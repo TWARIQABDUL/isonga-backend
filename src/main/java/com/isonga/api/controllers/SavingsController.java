@@ -81,4 +81,26 @@ public class SavingsController {
 
         return ResponseEntity.ok(savingsService.findByUserIdNumber(idNumber));
     }
+
+// @GetMapping("/monthly-summary")
+//     public ResponseEntity<?> getMonthlySummary(Authentication authentication) {
+//         var userDetails = authentication.getPrincipal();
+//         String userIdNumber = userDetails.getUser().getIdNumber();
+
+//         var summary = savingsService.getMonthlySummary(userIdNumber);
+//         return ResponseEntity.ok(Map.of("success", true, "data", summary));
+//     }
+
+    @GetMapping("/monthly-summary")
+public ResponseEntity<?> getMonthlySummary(Authentication authentication) {
+    if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
+        return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+    }
+
+    String userIdNumber = authenticatedUser.getIdNumber();
+
+    var summary = savingsService.getMonthlySummary(userIdNumber);
+    return ResponseEntity.ok(Map.of("success", true, "data", summary));
+}
+
 }
