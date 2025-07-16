@@ -96,8 +96,12 @@ public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
                     token,
                     user.getRole().name(),
                     user.getEmail(),
-                    user.getFullName());
+                    user.getFullName(),
+                    user.getPhoneNumber(),
+                    user.getCell()
+                    );
 
+                    // System.out.println("opty"+user.getPhoneNumber());
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
