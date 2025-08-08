@@ -31,3 +31,4 @@ build/
 deploy
 ### VS Code ###
 .vscode/
+ec2-user@51.21.195.229
