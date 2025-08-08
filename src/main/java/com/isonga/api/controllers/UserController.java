@@ -1,5 +1,6 @@
 package com.isonga.api.controllers;
 
+import com.isonga.api.dto.UpdateUserRequest;
 import com.isonga.api.models.User;
 // import com.isonga.api.repositories.UserRepository;
 import org.springframework.security.core.Authentication;
@@ -53,14 +54,31 @@ public class UserController {
         return ResponseEntity.ok(Map.of("success", true, "data", results));
     }
 
-    @GetMapping("/profile")
-    public ResponseEntity<?> getCurrentUserProfile(Authentication authentication) {
+    // @GetMapping("/profile")
+    // public ResponseEntity<?> getCurrentUserProfile(Authentication authentication) {
+    //     if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
+    //         return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+    //     }
+
+    //     // System.out.println("User Email: " + authenticatedUser.getEmail());
+    //     return ResponseEntity.ok(authenticatedUser);
+    // }
+
+    @PatchMapping("/update")
+    public ResponseEntity<?> updateUserInfo(
+            @RequestBody UpdateUserRequest updateRequest,
+            Authentication authentication) {
+
         if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
             return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
         }
 
-        // System.out.println("User Email: " + authenticatedUser.getEmail());
-        return ResponseEntity.ok(authenticatedUser);
+        try {
+            User updatedUser = userService.updateUser(authenticatedUser.getEmail(), updateRequest);
+            return ResponseEntity.ok(Map.of("success", true, "user", updatedUser));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
     }
 
 }

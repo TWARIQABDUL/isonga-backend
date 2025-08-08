@@ -1,5 +1,6 @@
 package com.isonga.api.services;
 
+import com.isonga.api.dto.UpdateUserRequest;
 import com.isonga.api.models.User;
 import com.isonga.api.repositories.UserRepository;
 import org.springframework.stereotype.Service;
@@ -45,8 +46,23 @@ public class UserService {
     public List<User> searchUsers(String query) {
         return userRepository.findByIdNumberContainingIgnoreCaseOrFullNameContainingIgnoreCase(query, query);
     }
-    public Optional<User> getUserByEmail(String email){
+
+    public Optional<User> getUserByEmail(String email) {
         return userRepository.getUserByEmail(email);
+    }
+
+    public User updateUser(String email, UpdateUserRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (request.getFullName() != null)
+            user.setFullName(request.getFullName());
+        if (request.getPhoneNumber() != null)
+            user.setPhoneNumber(request.getPhoneNumber());
+        if (request.getCell() != null)
+            user.setCell(request.getCell());
+
+        return userRepository.save(user);
     }
 
 }
