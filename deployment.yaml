@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: isonga-api
+  labels:
+    app: isonga-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: isonga-api
+  template:
+    metadata:
+      labels:
+        app: isonga-api
+    spec:
+      containers:
+        - name: isonga-api
+          image: isonga-api:latest
+          ports:
+            - containerPort: 8080
