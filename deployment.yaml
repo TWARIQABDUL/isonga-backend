@@ -14,8 +14,19 @@ spec:
       labels:
         app: isonga-api
     spec:
+      imagePullSecrets:
+        - name: isonga-registry
+
       containers:
         - name: isonga-api
-          image: isonga-api:latest
+          image: registry.digitalocean.com/isonga-registry/isonga-backend-app:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
+          
+          # Inject Secrets
+          envFrom:
+            - secretRef:
+                name: spring-app-secrets
+          
+          # REMOVED: livenessProbe
