@@ -92,20 +92,20 @@ public class SavingsController {
 //     }
 
     @GetMapping("/monthly-summary")
-public ResponseEntity<?> getMonthlySummary(Authentication authentication) {
-    if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
-        return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+    public ResponseEntity<?> getMonthlySummary(Authentication authentication) {
+        if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+        }
+    
+        String userIdNumber = authenticatedUser.getIdNumber();
+    
+        var summary = savingsService.getMonthlySummary(userIdNumber);
+        return ResponseEntity.ok(Map.of("success", true, "data", summary));
     }
-
-    String userIdNumber = authenticatedUser.getIdNumber();
-
-    var summary = savingsService.getMonthlySummary(userIdNumber);
-    return ResponseEntity.ok(Map.of("success", true, "data", summary));
-}
-@GetMapping("/dayreport")
-public ResponseEntity<?>finddairlyReport(){
-    var dayreport = savingsService.findDailyRepor();
-    return ResponseEntity.status(200).body(dayreport);
-}
+    @GetMapping("/dayreport")
+    public ResponseEntity<?>finddairlyReport(){
+        var dayreport = savingsService.findDailyRepor();
+        return ResponseEntity.status(200).body(dayreport);
+    }
 
 }
