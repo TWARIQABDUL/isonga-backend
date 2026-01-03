@@ -57,4 +57,9 @@ public class SavingsService {
                         ((Number) item.get("target")).doubleValue()))
                 .toList();
     }
+    public List<Map<String, Object>> findDailyRepor(){
+        List<Map<String, Object>> results = savingsRepository.findDailyReport();
+        System.out.println("the repot "+results);
+        return results;
+    }
 }

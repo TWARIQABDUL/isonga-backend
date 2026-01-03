@@ -28,5 +28,19 @@ public interface SavingsRepository extends JpaRepository<Savings, Integer> {
 """, nativeQuery = true)
 List<Map<String, Object>> findMonthlySavingsSummary(@Param("userIdNumber") String userIdNumber);
 
+@Query(
+    value = """
+        SELECT 
+            u.full_name,
+            u.id_number,
+            SUM(s.amount) AS total_amount,
+            s.date_received,
+            s.id as savings_id
+        FROM users u
+        JOIN savings s ON s.user_id_number = u.id_number
+        GROUP BY u.full_name, u.id_number, s.date_received
+        ORDER BY s.date_received DESC
+    """, nativeQuery = true)
+List<Map<String, Object>> findDailyReport();
 
 }
