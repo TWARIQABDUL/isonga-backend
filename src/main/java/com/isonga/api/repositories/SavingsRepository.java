@@ -37,8 +37,8 @@ List<Map<String, Object>> findMonthlySavingsSummary(@Param("userIdNumber") Strin
             u.full_name,
             u.id_number,
             SUM(s.amount) AS total_amount,
-            s.date_received,
-            s.id as savings_id
+            s.date_received
+            -- Removed s.id because it conflicts with grouping by day
         FROM users u
         JOIN savings s ON s.user_id_number = u.id_number
         GROUP BY u.full_name, u.id_number, s.date_received
