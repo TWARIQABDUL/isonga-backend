@@ -16,14 +16,17 @@ public interface SavingsRepository extends JpaRepository<Savings, Integer> {
     @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Savings s WHERE s.userIdNumber = :userIdNumber")
     double sumByUserIdNumber(@Param("userIdNumber") String userIdNumber);
     
-    @Query(value = """
+  @Query(value = """
     SELECT 
         DATE_FORMAT(date_received, '%b') AS month,
         SUM(amount) AS amount,
         SUM(target) AS target
     FROM savings
     WHERE user_id_number = :userIdNumber
-    GROUP BY YEAR(date_received), MONTH(date_received)
+    GROUP BY 
+        YEAR(date_received), 
+        MONTH(date_received),
+        DATE_FORMAT(date_received, '%b')  -- <--- ADDED THIS LINE
     ORDER BY MONTH(date_received)
 """, nativeQuery = true)
 List<Map<String, Object>> findMonthlySavingsSummary(@Param("userIdNumber") String userIdNumber);
