@@ -28,15 +28,15 @@ public class Savings {
     @Column(nullable = false)
     private BigDecimal target;
 
-    @Column(name = "date_received", insertable = false, updatable = false)
+    @Column(name = "date_received")
     private LocalDate dateReceived;
 
-    @Column(name = "week_number", insertable = false, updatable = false)
+    @Column(name = "week_number")
     private Integer weekNumber;
 
-    @Column(insertable = false, updatable = false)
+    @Column(name = "year")
     private Integer year;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 }
