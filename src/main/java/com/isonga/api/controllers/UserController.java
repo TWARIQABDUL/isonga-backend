@@ -81,4 +81,14 @@ public class UserController {
         }
     }
 
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> updateUserById(@PathVariable Long id, @RequestBody UpdateUserRequest updateRequest) {
+        try {
+            User updatedUser = userService.updateUser(id, updateRequest);
+            return ResponseEntity.ok(Map.of("success", true, "user", updatedUser));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
 }

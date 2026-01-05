@@ -46,4 +46,21 @@ List<Map<String, Object>> findMonthlySavingsSummary(@Param("userIdNumber") Strin
     """, nativeQuery = true)
 List<Map<String, Object>> findDailyReport();
 
+@Query(value = """
+    SELECT s.*, u.full_name 
+    FROM savings s 
+    JOIN users u ON s.user_id_number = u.id_number 
+    WHERE (:userIdNumber IS NULL OR s.user_id_number = :userIdNumber)
+    AND (:year IS NULL OR YEAR(s.date_received) = :year)
+    AND (:month IS NULL OR MONTH(s.date_received) = :month)
+    AND (:week IS NULL OR WEEK(s.date_received, 1) = :week)
+    ORDER BY s.date_received DESC
+""", nativeQuery = true)
+List<Map<String, Object>> findSavingsReport(
+    @Param("userIdNumber") String userIdNumber,
+    @Param("year") Integer year,
+    @Param("month") Integer month,
+    @Param("week") Integer week
+);
+
 }

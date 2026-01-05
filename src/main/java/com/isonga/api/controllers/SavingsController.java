@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @Validated
@@ -106,6 +107,26 @@ public class SavingsController {
     public ResponseEntity<?>finddairlyReport(){
         var dayreport = savingsService.findDailyRepor();
         return ResponseEntity.status(200).body(dayreport);
+    }
+
+    @GetMapping("/report")
+    public ResponseEntity<?> getSavingsReport(
+            @RequestParam(required = false) String userIdNumber,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer week,
+            Authentication authentication) {
+
+        if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+        }
+
+        if (authenticatedUser.getRole() != User.Role.ADMIN) {
+            return ResponseEntity.status(403).body(Map.of("success", false, "message", "Access denied: Admins only."));
+        }
+
+        List<?> report = savingsService.getSavingsReport(userIdNumber, year, month, week);
+        return ResponseEntity.ok(Map.of("success", true, "data", report));
     }
 
 }
