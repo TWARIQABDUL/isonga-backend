@@ -12,4 +12,7 @@ public interface LoanRepository extends JpaRepository<Loan, String> {
     @Query("SELECT COALESCE(SUM(l.amount), 0) FROM Loan l WHERE l.userIdNumber = :userIdNumber")
 double sumByUserIdNumber(@Param("userIdNumber") String userIdNumber);
 
+    @Query("SELECT COALESCE(SUM(l.amount), 0) FROM Loan l")
+    double sumTotalAmount();
+
 }
