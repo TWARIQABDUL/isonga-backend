@@ -13,8 +13,8 @@ target/
 .springBeans
 .sts4-cache
 .env
-deployment.yaml
 service.yaml
+deployment.yaml
 ### IntelliJ IDEA ###
 .idea
 *.iws
