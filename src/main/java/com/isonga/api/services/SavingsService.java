@@ -62,4 +62,8 @@ public class SavingsService {
         System.out.println("the repot "+results);
         return results;
     }
+
+    public List<Map<String, Object>> getSavingsReport(String userIdNumber, Integer year, Integer month, Integer week) {
+        return savingsRepository.findSavingsReport(userIdNumber, year, month, week);
+    }
 }

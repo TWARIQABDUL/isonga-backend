@@ -66,4 +66,18 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public User updateUser(Long id, UpdateUserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (request.getFullName() != null)
+            user.setFullName(request.getFullName());
+        if (request.getPhoneNumber() != null)
+            user.setPhoneNumber(request.getPhoneNumber());
+        if (request.getCell() != null)
+            user.setCell(request.getCell());
+
+        return userRepository.save(user);
+    }
+
 }
