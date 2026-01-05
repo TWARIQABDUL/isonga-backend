@@ -14,6 +14,7 @@ public class DashboardService {
 
     private final SavingsRepository savingsRepository;
     private final LoanRepository loanRepository;
+    private final com.isonga.api.repositories.UserRepository userRepository;
 
     public Map<String, Object> getSummary(User user) {
         double totalSavings = savingsRepository.sumByUserIdNumber(user.getIdNumber());
@@ -26,6 +27,18 @@ public class DashboardService {
                 "totalLoans", totalLoans,
                 "monthlyContribution", monthlyContribution,
                 "availableCredit", availableCredit
+        );
+    }
+
+    public Map<String, Object> getAdminSummary() {
+        long totalUsers = userRepository.count();
+        double totalSavings = savingsRepository.sumTotalAmount();
+        double totalLoans = loanRepository.sumTotalAmount();
+
+        return Map.of(
+                "totalUsers", totalUsers,
+                "totalSavings", totalSavings,
+                "totalLoans", totalLoans
         );
     }
 }

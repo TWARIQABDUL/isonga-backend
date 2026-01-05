@@ -63,4 +63,7 @@ List<Map<String, Object>> findSavingsReport(
     @Param("week") Integer week
 );
 
+    @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Savings s")
+    double sumTotalAmount();
+
 }
