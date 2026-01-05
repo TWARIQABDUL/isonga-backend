@@ -1,0 +1,57 @@
+name: Build and Push to DigitalOcean
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  # Replace with your actual DigitalOcean Registry name
+  REGISTRY_NAME: "your-registry-name" 
+  IMAGE_NAME: "spring-boot-app"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout Code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Set up Java 21
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # 3. Install DigitalOcean CLI (doctl)
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.ISONGA_DO_ACCESS_TOKEN }}
+
+      # 4. Login to DigitalOcean Container Registry
+      - name: Login to DOCR
+        run: doctl registry login --expiry-seconds 600
+
+      # 5. Build and Push Docker Image
+      - name: Build and Push Image
+        run: |
+          # Define the DigitalOcean registry path
+          # DigitalOcean registries are always at registry.digitalocean.com
+          REGISTRY_URL="registry.digitalocean.com/${{ secrets.ISONGA_REGISTRY_NAME }}"
+
+          IMAGE_TAG=${{ github.sha }}
+          FULL_IMAGE_NAME="$REGISTRY_URL/${{ secrets.ISONGA_IMAGE_NAME }}"
+
+          echo "Building $FULL_IMAGE_NAME:$IMAGE_TAG"
+
+          # Build
+          docker build -t $FULL_IMAGE_NAME:$IMAGE_TAG -t $FULL_IMAGE_NAME:latest .
+          
+          # Push
+          docker push $FULL_IMAGE_NAME:$IMAGE_TAG
+          docker push $FULL_IMAGE_NAME:latest
