@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @Repository
-public interface SavingsRepository extends JpaRepository<Savings, Integer> {
+public interface SavingsRepository extends JpaRepository<Savings, Long> {
     List<Savings> findByUserIdNumber(String userIdNumber);
     
     @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Savings s WHERE s.userIdNumber = :userIdNumber")

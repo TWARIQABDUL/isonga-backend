@@ -1,6 +1,7 @@
 package com.isonga.api.controllers;
 
 import com.isonga.api.dto.SavingsRequest;
+import com.isonga.api.dto.SavingsUpdateDTO;
 import com.isonga.api.models.Savings;
 import com.isonga.api.models.User;
 import com.isonga.api.services.SavingsService;
@@ -129,4 +130,38 @@ public class SavingsController {
         return ResponseEntity.ok(Map.of("success", true, "data", report));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(
+            @PathVariable Long id,
+            @Valid @RequestBody SavingsUpdateDTO request,
+            Authentication authentication) {
+
+        if (!(authentication.getPrincipal() instanceof User authenticatedUser)) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
+        }
+
+        if (authenticatedUser.getRole() != User.Role.ADMIN) {
+            return ResponseEntity.status(403).body(Map.of("success", false, "message", "Access denied: Admins only."));
+        }
+
+        try {
+            Savings updatedSavings = savingsService.updateSavings(id, request, authenticatedUser.getIdNumber());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Savings record updated successfully",
+                    "data", updatedSavings
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "message", "An unexpected error occurred."
+            ));
+        }
+    }
 }
