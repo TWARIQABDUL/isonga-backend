@@ -39,4 +39,10 @@ public class Savings {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "edited_by")
+    private String editedBy;
+
+    @Column(name = "edited_at")
+    private LocalDateTime editedAt;
 }
