@@ -3,6 +3,8 @@ package com.isonga.api.services;
 import com.isonga.api.dto.UpdateUserRequest;
 import com.isonga.api.models.User;
 import com.isonga.api.repositories.UserRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,14 +13,18 @@ import java.util.Optional;
 @Service
 public class UserService {
 
+    @Autowired
+    private EmailService emailService;
+
     private final UserRepository userRepository;
 
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, EmailService emailService) {
         this.userRepository = userRepository;
+        this.emailService = emailService;
     }
 
     public User createUser(User user) {
@@ -28,6 +34,7 @@ public class UserService {
         if (user.getEmail() != null && userRepository.existsByEmail(user.getEmail())) {
             throw new IllegalArgumentException("User with this email already exists");
         }
+        emailService.sendCredentialEmail(user.getEmail(), user.getFullName(),user.getPassword());
         return userRepository.save(user);
     }
 
