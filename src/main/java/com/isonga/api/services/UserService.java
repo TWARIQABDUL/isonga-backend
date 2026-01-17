@@ -87,4 +87,36 @@ public class UserService {
         return userRepository.save(user);
     }
 
+   /**
+     * Admin tool: Notify only users who haven't been notified yet.
+     */
+    public void notifyAllExistingUsers() {
+        List<User> users = userRepository.findAll();
+        int count = 0;
+
+        for (User user : users) {
+            // ✅ CHECK: Only send if email exists AND notification hasn't been sent yet
+            if (user.getEmail() != null && !user.getEmail().isEmpty() && !user.isAccountNotificationSent()) {
+                
+                try {
+                    emailService.sendAccountActiveEmail(
+                            user.getEmail(),
+                            user.getFullName(),
+                            user.getIdNumber()
+                    );
+                    
+                    // ✅ UPDATE: Mark as sent and save
+                    user.setAccountNotificationSent(true);
+                    userRepository.save(user);
+                    
+                    count++;
+                    System.out.println("Notification sent to: " + user.getEmail());
+                    
+                } catch (Exception e) {
+                    System.err.println("Failed to notify " + user.getEmail() + ": " + e.getMessage());
+                }
+            }
+        }
+        System.out.println("Batch notification complete. Sent " + count + " emails.");
+    }
 }
