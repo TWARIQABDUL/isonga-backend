@@ -1,11 +1,14 @@
 package com.isonga.api.services;
 
+import com.isonga.api.models.User;
+import com.isonga.api.repositories.UserRepository;
 import com.sendgrid.*;
 import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Content;
 import com.sendgrid.helpers.mail.objects.Email;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -13,10 +16,13 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Optional;
 
 @Service
 public class EmailService {
 
+    @Autowired
+    private UserRepository userRepository;
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
     @Value("${app.sendgrid.api-key}")
@@ -31,6 +37,7 @@ public class EmailService {
     @Async
     public void sendCredentialEmail(String toEmail, String name, String password) {
         String subject = "Murakaza neza Mu Isonga - Amakuru Ya Konti yanyu";
+
 
         String htmlContentString = """
             <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f4f4; padding: 20px;">
@@ -141,7 +148,7 @@ public class EmailService {
                     <div style="padding: 30px; color: #333333;">
                         <h2 style="color: #2c3e50; margin-top: 0;">Muraho %s,</h2>
                         <p style="font-size: 16px; line-height: 1.6; color: #555;">
-                            Iyi ni notifikasiyo yerekeye ibihano Waciwe ku konti yawe.
+                            Iyi ni notifikasiyo yerekeye ibihano kuri konti yawe.
                         </p>
                         <div style="background-color: #f8f9fa; border-left: 5px solid %s; padding: 20px; margin: 25px 0; border-radius: 4px;">
                             <p style="margin: 5px 0; font-size: 14px; color: #777;">Impamvu:</p>
@@ -163,12 +170,49 @@ public class EmailService {
 
         sendEmail(toEmail, subject, htmlContentString);
     }
+    // ... existing imports
+@Async
+public void sendAccountActiveEmail(String toEmail, String name, String username) {
+    String subject = "Welcome to Isonga - Account Activated";
+
+    String htmlContentString = """
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f4f4; padding: 20px;">
+            <div style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="background-color: #2ecc71; padding: 20px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Isonga Youth Savings</h1>
+                </div>
+                <div style="padding: 30px; color: #333333;">
+                    <h2 style="color: #2c3e50; margin-top: 0;">Muraho %s!</h2>
+
+                    <p style="font-size: 16px; line-height: 1.6; color: #555;">
+                        Twishimiye Kubamenyesha ko konti yawe ya <b>Isonga Youth Savings</b> imaze gukorwa.
+                        muzajya mwakira amakuru ya konti yanyu binyuze kuri email.
+                    </p>
+
+                    <div style="background-color: #f8f9fa; border-left: 5px solid #2ecc71; padding: 20px; margin: 25px 0; border-radius: 4px;">
+                        <p style="margin: 5px 0; font-size: 14px; color: #777;">Username:</p>
+                        <p style="margin: 0 0 15px 0; font-size: 18px; font-weight: bold; color: #333;">%s</p>
+                    </div>
+
+                    <p style="font-size: 14px; color: #3498db;">
+                        Urashobora kwinjira muri porogaramu kugirango urebe ubwizigame bwawe no gusaba inguzanyo.
+                    </p>
+                </div>
+            </div>
+        </div>
+        """.formatted(name, username);
+
+    sendEmail(toEmail, subject, htmlContentString);
+}
+// ... existing methods
 
     private void sendEmail(String toEmail, String subject, String htmlContentString) {
         Email from = new Email(fromEmailAddress);
         Email to = new Email(toEmail);
         Content content = new Content("text/html", htmlContentString);
         Mail mail = new Mail(from, subject, to, content);
+        Optional<User> user = userRepository.findByEmail(toEmail);
+
 
         SendGrid sg = new SendGrid(sendGridApiKey);
         Request request = new Request();
@@ -180,6 +224,10 @@ public class EmailService {
 
             Response response = sg.api(request);
             if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                user.ifPresent(u -> {
+                    u.setAccountNotificationSent(true);
+                    userRepository.save(u);
+                });
                 log.info("Email successfully sent to {} via SendGrid. Subject: '{}'", toEmail, subject);
             } else {
                 log.error("Failed to send email to {}. Status: {}, Body: {}", toEmail, response.getStatusCode(), response.getBody());

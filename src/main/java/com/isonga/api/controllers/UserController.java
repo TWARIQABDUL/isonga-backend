@@ -91,4 +91,23 @@ public class UserController {
         }
     }
 
+    /**
+     * ONE-TIME USE: Notify all users created before email system was active.
+     */
+    @PostMapping("/notify-all-existing")
+    public ResponseEntity<?> notifyExistingUsers(Authentication authentication) {
+        // Security Check: Only Admin can do this
+        if (authentication.getPrincipal() instanceof User user && user.getRole() == User.Role.ADMIN) {
+            
+            // Run in background so request doesn't timeout
+            new Thread(() -> userService.notifyAllExistingUsers()).start();
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true, 
+                "message", "Bulk email notification started in background."
+            ));
+        }
+        return ResponseEntity.status(403).body(Map.of("success", false, "message", "Access Denied"));
+    }
+
 }
