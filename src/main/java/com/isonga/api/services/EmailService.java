@@ -139,15 +139,15 @@ public class EmailService {
                         <h1 style="color: #ffffff; margin: 0; font-size: 24px;">%s</h1>
                     </div>
                     <div style="padding: 30px; color: #333333;">
-                        <h2 style="color: #2c3e50; margin-top: 0;">Hello %s,</h2>
+                        <h2 style="color: #2c3e50; margin-top: 0;">Muraho %s,</h2>
                         <p style="font-size: 16px; line-height: 1.6; color: #555;">
-                            This is a notification regarding a penalty on your account.
+                            Iyi ni notifikasiyo yerekeye ibihano Waciwe ku konti yawe.
                         </p>
                         <div style="background-color: #f8f9fa; border-left: 5px solid %s; padding: 20px; margin: 25px 0; border-radius: 4px;">
-                            <p style="margin: 5px 0; font-size: 14px; color: #777;">Reason:</p>
+                            <p style="margin: 5px 0; font-size: 14px; color: #777;">Impamvu:</p>
                             <p style="margin: 0 0 15px 0; font-size: 16px; font-weight: bold; color: #333;">%s</p>
-                            
-                            <p style="margin: 5px 0; font-size: 14px; color: #777;">Amount:</p>
+
+                            <p style="margin: 5px 0; font-size: 14px; color: #777;">Amafaranga:</p>
                             <p style="margin: 0 0 15px 0; font-size: 18px; font-weight: bold; color: #333;">%s</p>
 
                             <p style="margin: 5px 0; font-size: 14px; color: #777;">Status:</p>
