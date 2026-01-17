@@ -1,38 +1,41 @@
 package com.isonga.api.services;
 
-import jakarta.mail.internet.MimeMessage;
+import com.sendgrid.*;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
 
 @Service
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    @Autowired
-    private JavaMailSender mailSender;
+    @Value("${app.sendgrid.api-key}")
+    private String sendGridApiKey;
 
-    @Value("${spring.mail.username}")
-    private String mailUsername;
+    @Value("${app.sendgrid.mail.from}")
+    private String fromEmailAddress;
 
     /**
-     * Sends the credential email asynchronously.
-     * Note: Added 'name' parameter to personalize the greeting (e.g., "Hello Twari").
+     * Sends the credential email asynchronously using SendGrid.
      */
     @Async
     public void sendCredentialEmail(String toEmail, String name, String password) {
-        try {
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
+        // 1. Configure Sender and Recipient
+        Email from = new Email(fromEmailAddress);
+        Email to = new Email(toEmail);
+        String subject = "Welcome to Isonga - Your Account Details";
 
-            // Professional HTML Template with Java Text Blocks
-            String htmlMsg = """
+        // 2. Prepare HTML Content
+        // We reuse your existing professional HTML template
+        String htmlContentString = """
             <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f4f4; padding: 20px;">
                 <div style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     
@@ -72,17 +75,32 @@ public class EmailService {
             </div>
             """.formatted(name, toEmail, password);
 
-            helper.setText(htmlMsg, true); // Set to 'true' to enable HTML
-            helper.setTo(toEmail);
-            helper.setSubject("Welcome to Isonga - Your Account Details");
-            helper.setFrom(mailUsername);
+        Content content = new Content("text/html", htmlContentString);
 
-            mailSender.send(mimeMessage);
-            log.info("Credential email successfully sent to {}", toEmail);
+        // 3. Construct the Mail Object
+        Mail mail = new Mail(from, subject, to, content);
 
-        } catch (Exception e) {
-            // We log the error instead of throwing it, so the app doesn't crash
-            log.error("Failed to send email to {}: {}", toEmail, e.getMessage());
+        // 4. Initialize SendGrid and Create Request
+        SendGrid sg = new SendGrid(sendGridApiKey);
+        Request request = new Request();
+
+        try {
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+
+            // 5. Send Request
+            Response response = sg.api(request);
+
+            // 6. Logging based on Status Code
+            if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                log.info("Credential email successfully sent to {} via SendGrid. Status: {}", toEmail, response.getStatusCode());
+            } else {
+                log.error("Failed to send email via SendGrid. Status: {}, Body: {}", response.getStatusCode(), response.getBody());
+            }
+
+        } catch (IOException ex) {
+            log.error("Network error sending email to {}: {}", toEmail, ex.getMessage());
         }
     }
 }
