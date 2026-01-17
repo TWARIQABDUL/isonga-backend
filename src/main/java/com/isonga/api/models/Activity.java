@@ -38,7 +38,7 @@ public class Activity {
     private Status status;
 
     public enum Type {
-        deposit, withdrawal, loan_request, loan_payment, interest
+        deposit, withdrawal, loan_request, loan_payment, interest, penalty
     }
 
     public enum Status {
