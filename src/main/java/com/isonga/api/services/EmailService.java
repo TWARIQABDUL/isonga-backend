@@ -30,7 +30,7 @@ public class EmailService {
      */
     @Async
     public void sendCredentialEmail(String toEmail, String name, String password) {
-        String subject = "Welcome to Isonga - Your Account Details";
+        String subject = "Murakaza neza Mu Isonga - Amakuru Ya Konti yanyu";
 
         String htmlContentString = """
             <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f4f4; padding: 20px;">
@@ -39,14 +39,14 @@ public class EmailService {
                         <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Isonga Youth Savings</h1>
                     </div>
                     <div style="padding: 30px; color: #333333;">
-                        <h2 style="color: #2c3e50; margin-top: 0;">Hello %s!</h2>
+                        <h2 style="color: #2c3e50; margin-top: 0;">Muraho %s!</h2>
                         <p style="font-size: 16px; line-height: 1.6; color: #555;">
-                            Welcome to <b>Isonga Youth Savings</b>. Your account has been successfully created.
+                            Welcome to <b>Isonga Youth Savings</b>. Konti Yanyu Yafunguwe neza.
                         </p>
                         <div style="background-color: #f8f9fa; border-left: 5px solid #2ecc71; padding: 20px; margin: 25px 0; border-radius: 4px;">
                             <p style="margin: 5px 0; font-size: 14px; color: #777;">Username:</p>
                             <p style="margin: 0 0 15px 0; font-size: 18px; font-weight: bold; color: #333;">%s</p>
-                            <p style="margin: 5px 0; font-size: 14px; color: #777;">Temporary Password:</p>
+                            <p style="margin: 5px 0; font-size: 14px; color: #777;">Ijambo Banga Ry'agateganyo:</p>
                             <p style="margin: 0; font-size: 18px; font-family: monospace; font-weight: bold; color: #e74c3c; letter-spacing: 1px;">%s</p>
                         </div>
                         <p style="font-size: 14px; color: #e67e22;">
@@ -77,33 +77,33 @@ public class EmailService {
                         <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Savings Confirmation</h1>
                     </div>
                     <div style="padding: 30px; color: #333333;">
-                        <h2 style="color: #2c3e50; margin-top: 0;">Hello %s,</h2>
+                        <h2 style="color: #2c3e50; margin-top: 0;">Muraho %s!</h2>
                         <p style="font-size: 16px; line-height: 1.6; color: #555;">
-                            We have received your savings contribution. Here is your current account summary:
+                            Ubwizigame bwawe Bwakiriwe Neza. Rea Incamake yubwizigame bwawe:
                         </p>
                         <table style="width: 100%%; border-collapse: collapse; margin: 20px 0; font-size: 15px;">
                             <tr style="background-color: #f8f9fa;">
-                                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #777;">Today's Saving</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #777;">Ubwizigame Bw'uyu munsi</td>
                                 <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold; text-align: right; color: #2ecc71;">%s</td>
                             </tr>
                             <tr>
-                                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #777;">Active Loan</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #777;">Inguzanyo Ufite</td>
                                 <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold; text-align: right; color: #e74c3c;">%s</td>
                             </tr>
                             <tr style="background-color: #f8f9fa;">
-                                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #777;">Available Penalties</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #777;">Ibihano Ufite</td>
                                 <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold; text-align: right;">%s</td>
                             </tr>
                             <tr>
-                                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #777;">Paid Penalties</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #777;">Ibihano Byishyuwe</td>
                                 <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold; text-align: right; color: #2ecc71;">%s</td>
                             </tr>
                             <tr style="background-color: #f8f9fa;">
-                                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #777;">Unpaid Penalties</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #777;">Ibihano Bitishyuwe</td>
                                 <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold; text-align: right; color: #e74c3c;">%s</td>
                             </tr>
                             <tr style="background-color: #2c3e50; color: #fff;">
-                                <td style="padding: 15px; font-weight: bold;">TOTAL SAVINGS</td>
+                                <td style="padding: 15px; font-weight: bold;">Ubwizigame Bwose</td>
                                 <td style="padding: 15px; font-weight: bold; text-align: right;">%s</td>
                             </tr>
                         </table>
@@ -129,7 +129,7 @@ public class EmailService {
     @Async
     public void sendPenaltyNotification(String toEmail, String name, BigDecimal amount, String reason, String status) {
         boolean isPaid = "PAID".equalsIgnoreCase(status);
-        String subject = isPaid ? "Penalty Payment Confirmation" : "Isonga - New Penalty Issued";
+        String subject = isPaid ? "Ibihano Byishyuwe" : "Isonga - Ibihano Bishya";
         String color = isPaid ? "#2ecc71" : "#e74c3c"; // Green for Paid, Red for Issued
 
         String htmlContentString = """
