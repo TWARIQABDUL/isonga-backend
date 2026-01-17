@@ -5,9 +5,11 @@ import com.isonga.api.dto.SavingsRequest;
 import com.isonga.api.dto.SavingsUpdateDTO;
 import com.isonga.api.models.Activity;
 import com.isonga.api.models.Loan;
+import com.isonga.api.models.Penalty;
 import com.isonga.api.models.Savings;
 import com.isonga.api.models.User;
 import com.isonga.api.repositories.LoanRepository;
+import com.isonga.api.repositories.PenaltyRepository;
 import com.isonga.api.repositories.SavingsRepository;
 import com.isonga.api.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,12 +34,15 @@ public class SavingsService {
     @Autowired
     private ActivityService activityService;
     
-    // ✅ Added these repositories to fetch user and loan info
     @Autowired
     private UserRepository userRepository;
     
     @Autowired
     private LoanRepository loanRepository;
+
+    // ✅ ADDED: Inject Penalty Repository
+    @Autowired
+    private PenaltyRepository penaltyRepository;
 
     @Autowired
     private EmailService emailService;
@@ -73,7 +78,7 @@ public class SavingsService {
 
         Savings savedSavings = savingsRepository.save(savings);
 
-        // 4. ✅ Trigger the email with calculated data
+        // 4. Trigger the email with calculated data
         sendSummaryEmail(request.getUserIdNumber(), request.getAmount());
 
         return savedSavings;
@@ -93,14 +98,25 @@ public class SavingsService {
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 // C. Calculate Total Savings (Previous Total + Today's Amount)
-                // Note: sumByUserIdNumber likely returns a double, so we convert it.
                 double dbTotal = savingsRepository.sumByUserIdNumber(userIdNumber);
                 BigDecimal totalSavings = BigDecimal.valueOf(dbTotal);
 
-                // D. Penalties (Set to 0.00 for now)
-                BigDecimal availablePenalties = BigDecimal.ZERO;
-                BigDecimal paidPenalties = BigDecimal.ZERO;
-                BigDecimal unpaidPenalties = BigDecimal.ZERO;
+                // D. ✅ Calculate Dynamic Penalties
+                List<Penalty> penalties = penaltyRepository.findByUserIdNumber(userIdNumber);
+
+                BigDecimal paidPenalties = penalties.stream()
+                        .filter(p -> p.getStatus() == Penalty.Status.PAID)
+                        .map(Penalty::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal unpaidPenalties = penalties.stream()
+                        // Assuming Status.PENDING is what you use for unpaid penalties
+                        .filter(p -> p.getStatus() == Penalty.Status.PENDING) 
+                        .map(Penalty::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+                // "Available Penalties" here represents the Total Penalties ever issued (Paid + Unpaid)
+                BigDecimal availablePenalties = paidPenalties.add(unpaidPenalties);
 
                 // E. Call EmailService with ALL required arguments
                 emailService.sendSavingsSummary(
@@ -116,7 +132,6 @@ public class SavingsService {
             }
         } catch (Exception e) {
             System.err.println("Error preparing savings email: " + e.getMessage());
-            // We catch errors here so the savings transaction doesn't fail if email fails
         }
     }
 
