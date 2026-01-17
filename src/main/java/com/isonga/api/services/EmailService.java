@@ -24,7 +24,7 @@ public class EmailService {
     private String sendGridApiKey;
 
     // Matches the key we set in application.properties
-    @Value("${app.sendgrid.from.email}")
+    @Value("${app.sendgrid.mail.from}")
     private String fromEmailAddress;
 
     /**
