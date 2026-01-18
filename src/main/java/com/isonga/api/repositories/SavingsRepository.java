@@ -13,9 +13,13 @@ import java.util.Map;
 public interface SavingsRepository extends JpaRepository<Savings, Long> {
     List<Savings> findByUserIdNumber(String userIdNumber);
     
-    @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Savings s WHERE s.userIdNumber = :userIdNumber")
+    // ✅ Sum of (Amount + Ingoboka) to show the full money the user has put in
+    @Query("SELECT COALESCE(SUM(s.amount + s.ingoboka), 0) FROM Savings s WHERE s.userIdNumber = :userIdNumber")
     double sumByUserIdNumber(@Param("userIdNumber") String userIdNumber);
-    
+
+    @Query("SELECT COALESCE(SUM(s.ingoboka), 0) FROM Savings s WHERE s.userIdNumber = :userIdNumber")
+    double sumIngobokaByUserIdNumber(@Param("userIdNumber") String userIdNumber);
+
   @Query(value = """
     SELECT 
         DATE_FORMAT(date_received, '%b') AS month,

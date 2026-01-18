@@ -106,6 +106,7 @@ public class SavingsService {
                 // Total Savings (DB sum of 'amount' column only - excludes Ingoboka history)
                 double dbTotal = savingsRepository.sumByUserIdNumber(userIdNumber);
                 BigDecimal totalSavings = BigDecimal.valueOf(dbTotal);
+                double ingobokaTotal = savingsRepository.sumIngobokaByUserIdNumber(userIdNumber);
 
                 // Penalties
                 List<Penalty> penalties = penaltyRepository.findByUserIdNumber(userIdNumber);
@@ -130,7 +131,8 @@ public class SavingsService {
                         availablePenalties,
                         paidPenalties,
                         unpaidPenalties,
-                        totalSavings
+                        totalSavings,
+                        ingobokaTotal
                 );
             }
         } catch (Exception e) {
