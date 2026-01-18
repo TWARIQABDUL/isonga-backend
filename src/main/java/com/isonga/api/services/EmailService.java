@@ -200,7 +200,7 @@ public void sendAccountActiveEmail(String toEmail, String name, String username)
                 </div>
             </div>
         </div>
-        """.formatted(name, username);
+        """.formatted(name, toEmail);
 
     sendEmail(toEmail, subject, htmlContentString);
 }

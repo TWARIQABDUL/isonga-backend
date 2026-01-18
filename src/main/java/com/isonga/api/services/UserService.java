@@ -119,4 +119,30 @@ public class UserService {
         }
         System.out.println("Batch notification complete. Sent " + count + " emails.");
     }
+    // ... existing imports & class ...
+
+    /**
+     * Resends the "Account Active" email to a specific user.
+     */
+    public void resendNotification(String idNumber) {
+        User user = userRepository.findByIdNumber(idNumber)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + idNumber));
+
+        if (user.getEmail() == null || user.getEmail().isEmpty()) {
+            throw new RuntimeException("User has no email address");
+        }
+
+        // Send the email
+        emailService.sendAccountActiveEmail(
+                user.getEmail(),
+                user.getFullName(),
+                user.getIdNumber()
+        );
+
+        // Ensure flag is true
+        if (!user.isAccountNotificationSent()) {
+            user.setAccountNotificationSent(true);
+            userRepository.save(user);
+        }
+    }
 }
