@@ -40,45 +40,52 @@ public class SavingsService {
     @Autowired
     private LoanRepository loanRepository;
 
-    // ✅ ADDED: Inject Penalty Repository
     @Autowired
     private PenaltyRepository penaltyRepository;
 
     @Autowired
     private EmailService emailService;
 
+    // Fixed Fee
+    private static final BigDecimal INGOBOKA_FEE = new BigDecimal("200.00");
+
     @Transactional
     public Savings save(SavingsRequest request) {
-        // 1. Capture the current date and time
+        // 1. Validate Amount (Prevent negative savings)
+        if (request.getAmount().compareTo(INGOBOKA_FEE) < 0) {
+            throw new IllegalArgumentException("Deposit amount must be at least " + INGOBOKA_FEE + " (Ingoboka Fee)");
+        }
+
         LocalDate today = LocalDate.now();
-        
-        // 2. Calculate the Week Number and Year
         int weekNum = today.get(WeekFields.of(Locale.getDefault()).weekOfWeekBasedYear());
         int currentYear = today.getYear();
 
+        // 2. Calculate Final Savings (Total - 200)
+        BigDecimal finalSavingsAmount = request.getAmount().subtract(INGOBOKA_FEE);
+
         Savings savings = Savings.builder()
                 .userIdNumber(request.getUserIdNumber())
-                .amount(request.getAmount())
-                .target(request.getTarget())
+                .amount(finalSavingsAmount) // Net amount
+                .ingoboka(INGOBOKA_FEE)     // Fixed fee
                 .dateReceived(today)
                 .weekNumber(weekNum)
                 .year(currentYear)
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        // 3. Log the activity
+        // 3. Log the activity (Log the FULL amount so user sees what they sent)
         activityService.saveActivity(Activity.builder()
                 .userIdNumber(request.getUserIdNumber())
                 .type(Activity.Type.deposit)
-                .description("Monthly savings contribution")
-                .amount(request.getAmount().doubleValue())
+                .description("Monthly savings (Incl. " + INGOBOKA_FEE + " Ingoboka)")
+                .amount(request.getAmount().doubleValue()) 
                 .date(today)
                 .status(Activity.Status.completed)
                 .build());
 
         Savings savedSavings = savingsRepository.save(savings);
 
-        // 4. Trigger the email with calculated data
+        // 4. Send email (Send FULL amount context)
         sendSummaryEmail(request.getUserIdNumber(), request.getAmount());
 
         return savedSavings;
@@ -86,22 +93,22 @@ public class SavingsService {
 
     private void sendSummaryEmail(String userIdNumber, BigDecimal todayAmount) {
         try {
-            // A. Fetch User to get Email and Name
             User user = userRepository.findByIdNumber(userIdNumber).orElse(null);
             
             if (user != null && user.getEmail() != null) {
-                // B. Calculate Active Loans (sum of approved or active)
+                // Active Loans
                 List<Loan> loans = loanRepository.findByUserIdNumber(userIdNumber);
                 BigDecimal activeLoan = loans.stream()
                         .filter(l -> l.getStatus() == Loan.Status.approved || l.getStatus() == Loan.Status.active)
                         .map(Loan::getAmount)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                // C. Calculate Total Savings (Previous Total + Today's Amount)
+                // Total Savings (DB sum of 'amount' column only - excludes Ingoboka history)
                 double dbTotal = savingsRepository.sumByUserIdNumber(userIdNumber);
                 BigDecimal totalSavings = BigDecimal.valueOf(dbTotal);
+                double ingobokaTotal = savingsRepository.sumIngobokaByUserIdNumber(userIdNumber);
 
-                // D. ✅ Calculate Dynamic Penalties
+                // Penalties
                 List<Penalty> penalties = penaltyRepository.findByUserIdNumber(userIdNumber);
 
                 BigDecimal paidPenalties = penalties.stream()
@@ -110,15 +117,12 @@ public class SavingsService {
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 BigDecimal unpaidPenalties = penalties.stream()
-                        // Assuming Status.PENDING is what you use for unpaid penalties
                         .filter(p -> p.getStatus() == Penalty.Status.PENDING) 
                         .map(Penalty::getAmount)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
                 
-                // "Available Penalties" here represents the Total Penalties ever issued (Paid + Unpaid)
                 BigDecimal availablePenalties = paidPenalties.add(unpaidPenalties);
 
-                // E. Call EmailService with ALL required arguments
                 emailService.sendSavingsSummary(
                         user.getEmail(),
                         user.getFullName(),
@@ -127,7 +131,8 @@ public class SavingsService {
                         availablePenalties,
                         paidPenalties,
                         unpaidPenalties,
-                        totalSavings
+                        totalSavings,
+                        ingobokaTotal
                 );
             }
         } catch (Exception e) {
@@ -143,19 +148,21 @@ public class SavingsService {
         return savingsRepository.findByUserIdNumber(idNumber);
     }
 
+    // ⚠️ CRITICAL: Ensure SavingsRepository native query aliases 'ingoboka' as 'target'
+    // OR update this line to: item.get("ingoboka")
     public List<MonthlySavingsSummary> getMonthlySummary(String userIdNumber) {
         List<Map<String, Object>> results = savingsRepository.findMonthlySavingsSummary(userIdNumber);
         return results.stream()
                 .map(item -> new MonthlySavingsSummary(
                         (String) item.get("month"),
                         ((Number) item.get("amount")).doubleValue(),
-                        ((Number) item.get("target")).doubleValue()))
+                        // Ensure repository query says: "SUM(ingoboka) as ingoboka"
+                        ((Number) item.get("ingoboka")).doubleValue())) 
                 .toList();
     }
 
     public List<Map<String, Object>> findDailyRepor(){
-        List<Map<String, Object>> results = savingsRepository.findDailyReport();
-        return results;
+        return savingsRepository.findDailyReport();
     }
 
     public List<Map<String, Object>> getSavingsReport(String userIdNumber, Integer year, Integer month, Integer week) {
@@ -175,7 +182,10 @@ public class SavingsService {
         }
 
         savings.setAmount(request.getAmount());
-        savings.setTarget(request.getTarget());
+        
+        // Ensure SavingsUpdateDTO has 'target' or rename to 'ingoboka'
+        savings.setIngoboka(request.getIngoboka()); 
+
         savings.setEditedBy(adminId);
         savings.setEditedAt(now);
 

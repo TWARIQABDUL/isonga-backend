@@ -71,10 +71,10 @@ public class EmailService {
      * Sends the Savings Summary email.
      */
     @Async
-    public void sendSavingsSummary(String toEmail, String name, BigDecimal todaySaving, BigDecimal activeLoan, 
-                                   BigDecimal availablePenalties, BigDecimal paidPenalties, 
-                                   BigDecimal unpaidPenalties, BigDecimal totalSavings) {
-        
+    public void sendSavingsSummary(String toEmail, String name, BigDecimal todaySaving, BigDecimal activeLoan,
+                                   BigDecimal availablePenalties, BigDecimal paidPenalties,
+                                   BigDecimal unpaidPenalties, BigDecimal totalSavings, double ingobokaTotal) {
+
         String subject = "Isonga Savings - Transaction Summary";
 
         String htmlContentString = """
@@ -109,6 +109,10 @@ public class EmailService {
                                 <td style="padding: 12px; border-bottom: 1px solid #eee; color: #777;">Ibihano Bitishyuwe</td>
                                 <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold; text-align: right; color: #e74c3c;">%s</td>
                             </tr>
+                            <tr style="background-color: #f8f9fa;">
+                                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #777;">Total Ingoboka</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold; text-align: right; color: #2ecc71;">%s</td>
+                            </tr>
                             <tr style="background-color: #2c3e50; color: #fff;">
                                 <td style="padding: 15px; font-weight: bold;">Ubwizigame Bwose</td>
                                 <td style="padding: 15px; font-weight: bold; text-align: right;">%s</td>
@@ -123,7 +127,8 @@ public class EmailService {
                 formatMoney(activeLoan), 
                 formatMoney(availablePenalties), 
                 formatMoney(paidPenalties), 
-                formatMoney(unpaidPenalties), 
+                formatMoney(unpaidPenalties),
+                formatMoney(BigDecimal.valueOf(ingobokaTotal)),
                 formatMoney(totalSavings)
             );
 

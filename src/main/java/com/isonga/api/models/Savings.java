@@ -26,7 +26,7 @@ public class Savings {
     private BigDecimal amount;
 
     @Column(nullable = false)
-    private BigDecimal target;
+    private BigDecimal ingoboka;
 
     @Column(name = "date_received")
     private LocalDate dateReceived;
