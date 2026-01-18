@@ -34,11 +34,13 @@ public class DashboardService {
         long totalUsers = userRepository.count();
         double totalSavings = savingsRepository.sumTotalAmount();
         double totalLoans = loanRepository.sumTotalAmount();
+        double totalIngoboka = savingsRepository.sumIngobokaAmount();
 
         return Map.of(
                 "totalUsers", totalUsers,
                 "totalSavings", totalSavings,
-                "totalLoans", totalLoans
+                "totalLoans", totalLoans,
+                "totalIngoboka", totalIngoboka
         );
     }
 }

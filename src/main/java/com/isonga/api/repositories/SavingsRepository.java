@@ -41,7 +41,8 @@ List<Map<String, Object>> findMonthlySavingsSummary(@Param("userIdNumber") Strin
             u.full_name,
             u.id_number,
             SUM(s.amount) AS total_amount,
-            s.date_received
+            s.date_received,
+            SUM(s.ingoboka) AS total_ingoboka
             -- Removed s.id because it conflicts with grouping by day
         FROM users u
         JOIN savings s ON s.user_id_number = u.id_number
@@ -69,5 +70,7 @@ List<Map<String, Object>> findSavingsReport(
 
     @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Savings s")
     double sumTotalAmount();
+    @Query("SELECT COALESCE(SUM(s.ingoboka), 0) FROM Savings s")
+    double sumIngobokaAmount();
 
 }
