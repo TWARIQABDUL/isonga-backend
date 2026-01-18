@@ -20,7 +20,7 @@ public interface SavingsRepository extends JpaRepository<Savings, Long> {
     SELECT 
         DATE_FORMAT(date_received, '%b') AS month,
         SUM(amount) AS amount,
-        SUM(target) AS target
+        SUM(ingoboka) AS ingoboka
     FROM savings
     WHERE user_id_number = :userIdNumber
     GROUP BY 
