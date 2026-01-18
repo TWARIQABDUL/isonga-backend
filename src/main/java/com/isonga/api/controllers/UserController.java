@@ -110,4 +110,27 @@ public class UserController {
         return ResponseEntity.status(403).body(Map.of("success", false, "message", "Access Denied"));
     }
 
+    /**
+     * ADMIN: Resend notification to a specific user.
+     */
+    @PostMapping("/{idNumber}/resend-notification")
+    public ResponseEntity<?> resendNotification(@PathVariable String idNumber, Authentication authentication) {
+        // Security Check: Admin Only
+        if (authentication.getPrincipal() instanceof User user && user.getRole() == User.Role.ADMIN) {
+            try {
+                userService.resendNotification(idNumber);
+                return ResponseEntity.ok(Map.of(
+                    "success", true, 
+                    "message", "Notification resent successfully to " + idNumber
+                ));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false, 
+                    "message", e.getMessage()
+                ));
+            }
+        }
+        return ResponseEntity.status(403).body(Map.of("success", false, "message", "Access Denied"));
+    }
+
 }
