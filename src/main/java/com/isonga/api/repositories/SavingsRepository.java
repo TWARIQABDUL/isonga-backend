@@ -78,8 +78,8 @@ List<Map<String, Object>> findSavingsReport(
 
     @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Savings s " +
        "WHERE s.userIdNumber = :userIdNumber " +
-       "AND MONTH(s.date) = MONTH(CURRENT_DATE) " +
-       "AND YEAR(s.date) = YEAR(CURRENT_DATE)")
+       "AND MONTH(s.date_received) = MONTH(CURRENT_DATE) " +
+       "AND YEAR(s.date_received) = YEAR(CURRENT_DATE)")
 double monthlyContribution(@Param("userIdNumber") String userIdNumber);
 
 }
