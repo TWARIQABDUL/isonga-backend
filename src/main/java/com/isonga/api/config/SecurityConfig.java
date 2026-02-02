@@ -36,6 +36,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/update/**").authenticated()
 
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
                         // .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
